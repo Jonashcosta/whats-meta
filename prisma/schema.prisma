@@ -1,0 +1,47 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id     Int     @id @default(autoincrement())
+  bio    String? @db.Text
+  userId Int     @unique(map: "userId")
+  User   User    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Profile_1")
+}
+
+model Passwd {
+  id     Int     @id @default(autoincrement())
+  shadow String? @db.Text
+  userId Int     @unique(map: "userId")
+  User   User    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Shadow_1")
+}
+
+model User {
+  id      Int      @id @default(autoincrement())
+  name    String?  @db.VarChar(255)
+  email   String   @unique(map: "email") @db.VarChar(255)
+  roleId  Int      @unique(map: "roleId")
+  Passwd  Passwd?
+  Profile Profile?
+  Role    Role     @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "Role_1")
+}
+
+model Role {
+  id   Int    @id @default(autoincrement())
+  role String @db.Text
+  User User?
+}
+
+model Message {
+  id     Int     @id @default(autoincrement())
+  method String? @db.Text
+  text   String? @db.Text
+}
