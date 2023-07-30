@@ -1,5 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
+//https://www.prisma.io/docs/concepts/database-connectors/mysql
 
 generator client {
   provider = "prisma-client-js"
@@ -10,28 +11,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Profile {
+model ProfileUser {
   id     Int     @id @default(autoincrement())
   bio    String? @db.Text
   userId Int     @unique(map: "userId")
-  User   User    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Profile_1")
+  user   User    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Profile_1")
 }
 
 model Passwd {
   id     Int     @id @default(autoincrement())
   shadow String? @db.Text
   userId Int     @unique(map: "userId")
-  User   User    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Shadow_1")
+  user   User    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Shadow_1")
 }
 
 model User {
-  id      Int      @id @default(autoincrement())
-  name    String?  @db.VarChar(255)
-  email   String   @unique(map: "email") @db.VarChar(255)
-  roleId  Int      @unique(map: "roleId")
-  Passwd  Passwd?
-  Profile Profile?
-  Role    Role     @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "Role_1")
+  id          Int          @id @default(autoincrement())
+  name        String?      @db.VarChar(255)
+  email       String       @unique(map: "email") @db.VarChar(255)
+  roleId      Int          @unique(map: "roleId")
+  passwd      Passwd?
+  profileUser ProfileUser?
+  role        Role         @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "Role_1")
 }
 
 model Role {
@@ -40,8 +41,198 @@ model Role {
   User User?
 }
 
-model Message {
-  id     Int     @id @default(autoincrement())
-  method String? @db.Text
-  text   String? @db.Text
+model Webhook {
+  id     BigInt  @id @unique @db.BigInt
+  object String  @db.VarChar(255)
+  entry  Entry[]
 }
+
+model Entry {
+  id        BigInt    @id @unique @db.BigInt
+  timestamp DateTime? @db.Timestamp()
+  webhookId BigInt
+  webhook   Webhook   @relation(fields: [webhookId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "1")
+  changes   Changes[]
+}
+
+model Changes {
+  id    BigInt  @id @unique @db.BigInt
+  field String  @db.VarChar(255)
+  value Value[]
+
+  Entry   Entry?  @relation(fields: [entryId], references: [id])
+  entryId BigInt? @db.BigInt
+}
+
+model Value {
+  id                BigInt     @id @unique @db.BigInt
+  messaging_product String     @db.VarChar(255)
+  changes           Changes    @relation(fields: [changesId], references: [id])
+  changesId         BigInt
+  metadata          Metadata[]
+  contacts          Contacts[]
+  messages          Messages[]
+  status            Status[]
+}
+
+model Metadata {
+  id                   BigInt @id @unique @db.BigInt
+  display_phone_number String @db.VarChar(255)
+  phone_number_id      String @db.VarChar(255)
+  value                Value  @relation(fields: [valueId], references: [id])
+  valueId              BigInt
+}
+
+model Contacts {
+  id      BigInt    @id @unique @db.BigInt
+  wa_id   String    @db.VarChar(255)
+  value   Value     @relation(fields: [valueId], references: [id])
+  valueId BigInt
+  profile Profile[]
+}
+
+model Profile {
+  id         BigInt   @id @unique @db.BigInt
+  name       String   @db.VarChar(255)
+  contacts   Contacts @relation(fields: [contactsId], references: [id])
+  contactsId BigInt
+}
+
+model Status {
+  id      BigInt  @id @unique @db.BigInt
+  Value   Value?  @relation(fields: [valueId], references: [id])
+  valueId BigInt?
+
+  Conversation Conversation[]
+  pricing      Pricing[]
+}
+
+model Conversation {
+  id       BigInt   @id @unique @db.BigInt
+  Status   Status?  @relation(fields: [statusId], references: [id])
+  statusId BigInt?  @db.BigInt
+  origin   Origin[]
+}
+
+model Origin {
+  id             BigInt        @id @unique @db.BigInt
+  type           String
+  Conversation   Conversation? @relation(fields: [conversationId], references: [id])
+  conversationId BigInt?       @db.BigInt
+}
+
+model Pricing {
+  id            BigInt  @id @unique @db.BigInt
+  billable      Boolean
+  pricing_model String
+  category      String
+
+  Status   Status? @relation(fields: [statusId], references: [id])
+  statusId BigInt? @db.BigInt
+}
+
+model Messages {
+  id        BigInt   @id @unique @db.BigInt
+  from      String   @db.VarChar(255)
+  timestamp DateTime @db.Timestamp()
+  type      String   @db.VarChar(255)
+  value     Value    @relation(fields: [valueId], references: [id])
+  valueId   BigInt
+  text      Text[]
+}
+
+model Text {
+  id         BigInt   @id @unique @db.BigInt
+  body       String   @db.Text
+  messages   Messages @relation(fields: [messagesId], references: [id])
+  messagesId BigInt
+}
+
+// CREATE TABLE Webhook (
+//   Webhookid TEXT,
+//   id TEXT,
+//   object TEXT,
+//   PRIMARY KEY (id),
+//   FOREIGN KEY (Webhookid) REFERENCES generic(id)
+// );
+
+// CREATE TABLE Webhooka_entry (
+//   Webhooka_id TEXT,
+//   id TEXT,
+//   PRIMARY KEY (id),
+//   FOREIGN KEY (Webhooka_id) REFERENCES Webhooka(id)
+// );
+
+// CREATE TABLE Webhooka_entry_changes (
+//   Webhooka_entry_id TEXT,
+//   id TEXT,
+//   field TEXT,
+//   PRIMARY KEY (id),
+//   FOREIGN KEY (Webhooka_entry_id) REFERENCES Webhooka_entry(id)
+// );
+
+// CREATE TABLE Webhooka_entry_changes_value (
+//   Webhooka_entry_changes_id TEXT,
+//   id TEXT,
+//   messaging_product TEXT,
+//   PRIMARY KEY (id),
+//   FOREIGN KEY (Webhooka_entry_changes_id) REFERENCES Webhooka_entry_changes(id)
+// );
+
+// CREATE TABLE Webhooka_entry_changes_value_metadata (
+//   Webhooka_entry_changes_value_id TEXT,
+//   display_phone_number TEXT,
+//   phone_number_id TEXT,
+//   PRIMARY KEY (phone_number_id),
+//   FOREIGN KEY (Webhooka_entry_changes_value_id) REFERENCES Webhooka_entry_changes_value(id)
+// );
+
+// CREATE TABLE Webhooka_entry_changes_value_contacts (
+//   Webhooka_entry_changes_value_id TEXT,
+//   wa_id TEXT,
+//   PRIMARY KEY (wa_id),
+//   FOREIGN KEY (Webhooka_entry_changes_value_id) REFERENCES Webhooka_entry_changes_value(id)
+// );
+
+// CREATE TABLE Webhooka_entry_changes_value_contacts_profile (
+//   Webhooka_entry_changes_value_contacts_wa_id TEXT,
+//   id TEXT,
+//   name TEXT,
+//   PRIMARY KEY (id),
+//   FOREIGN KEY (Webhooka_entry_changes_value_contacts_id) REFERENCES Webhooka_entry_changes_value_contacts(wa_id)
+// );
+
+// CREATE TABLE Webhooka_entry_changes_value_messages (
+//   Webhooka_entry_changes_value_id TEXT,
+//   from TEXT,
+//   id TEXT,
+//   timestamp TEXT,
+//   type TEXT,
+//   PRIMARY KEY (id),
+//   FOREIGN KEY (Webhooka_entry_changes_value_id) REFERENCES Webhooka_entry_changes_value(id)
+// );
+
+// CREATE TABLE Webhooka_entry_changes_value_messages_context (
+//   Webhooka_entry_changes_value_messages_id TEXT,
+//   from TEXT,
+//   id TEXT,
+//   PRIMARY KEY (id),
+//   FOREIGN KEY (Webhooka_entry_changes_value_messages_id) REFERENCES Webhooka_entry_changes_value_messages(id)
+// );
+
+// CREATE TABLE Webhooka_entry_changes_value_messages_interactive (
+//   Webhooka_entry_changes_value_messages_id TEXT,
+//   id TEXT,
+//   type TEXT,
+//   PRIMARY KEY (id),
+//   FOREIGN KEY (Webhooka_entry_changes_value_messages_id) REFERENCES Webhooka_entry_changes_value_messages(id)
+// );
+
+// CREATE TABLE Webhooka_entry_changes_value_messages_interactive_list_reply (
+//   Webhooka_entry_changes_value_messages_interactive_id TEXT,
+//   id TEXT,
+//   title TEXT,
+//   description TEXT,
+//   PRIMARY KEY (id),
+//   FOREIGN KEY (Webhooka_entry_changes_value_messages_interactive_id) REFERENCES Webhooka_entry_changes_value_messages_interactive(id)
+// );
