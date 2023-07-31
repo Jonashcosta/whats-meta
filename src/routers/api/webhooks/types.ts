@@ -19,7 +19,7 @@ export interface WebhookNotification {
 }
 
 export interface Entry {
-  id: string;
+  id: number;
   changes: Change[];
   time?: number;
 }

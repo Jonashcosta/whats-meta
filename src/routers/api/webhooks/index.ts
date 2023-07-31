@@ -4,9 +4,10 @@
  */
 import { Request, Response, Router } from 'express';
 import { WebhookNotification } from './types';
-
+import db from '../../../db/conection';
+import { Webhook } from '@prisma/client';
 const webhook = Router();
-
+const prisma = db();
 webhook.get('/', (req: Request, res: Response) => {
   const mode = req.query['hub.mode'];
   const verify_token = req.query['hub.verify_token'];
@@ -41,7 +42,6 @@ webhook.get('/', (req: Request, res: Response) => {
  */
 
 webhook.post('/', async (req: Request, res: Response) => {
-  console.log();
   const body: WebhookNotification = await req.body;
 
   //  console.log(Object.getOwnPropertyNames(body.entry[0]) + '\n');
@@ -50,6 +50,24 @@ webhook.post('/', async (req: Request, res: Response) => {
       if (body.entry[0].changes[0].field)
         if (body.entry[0].changes[0].field === 'messages') {
           // message process
+          console.log(body);
+          const { entry, object } = body;
+          const { changes, id, time } = entry[0];
+          const { field, value } = changes[0];
+          const {
+            metadata,
+            messages,
+            messaging_product,
+            alert_type,
+            business_id,
+            statuses,
+            campaign_name,
+            complete_reason,
+            contacts,
+            current_limit,
+            decision,
+          } = value;
+          prisma.webhook.create().then((res) => console.log(res));
         } else {
           console.log('Error ', 'WebhookNotification::entry::changes::field');
         }
