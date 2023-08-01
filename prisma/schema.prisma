@@ -43,108 +43,177 @@ model Role {
 
 // meta 
 model Webhook {
-  id     BigInt  @id @unique @default(autoincrement()) @db.BigInt
-  object String  @db.VarChar(255)
+  id     Int     @id @default(autoincrement())
+  object String
   entry  Entry[]
 }
 
 model Entry {
-  id        BigInt    @id @unique @db.BigInt
-  timestamp DateTime? @db.Timestamp()
-  webhookId BigInt
-  webhook   Webhook   @relation(fields: [webhookId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "1")
-  changes   Changes[]
+  id      Int      @id
+  changes Change[]
+  time    Int?
+  Webhook Webhook  @relation(fields: [id], references: [id])
 }
 
-model Changes {
-  id    BigInt  @id @unique @db.BigInt
-  field String  @db.VarChar(255)
-  value Value[]
-
-  Entry   Entry?  @relation(fields: [entryId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "2")
-  entryId BigInt? @db.BigInt
+model Change {
+  id      Int    @id @default(autoincrement())
+  value   String
+  field   String
+  Entry   Entry? @relation(fields: [entryId], references: [id])
+  entryId Int?
 }
 
-model Value {
-  id                BigInt     @id @unique @db.BigInt
-  messaging_product String     @db.VarChar(255)
-  changes           Changes    @relation(fields: [changesId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "3")
-  changesId         BigInt
-  metadata          Metadata[]
-  contacts          Contacts[]
-  messages          Messages[]
-  status            Status[]
-}
+// model Value {
+//   messaging_product                MessagingProduct?
+//   metadata                         Metadata?                @relation(fields: [], references: [])
+//   contacts                         Contact[]
+//   messages                         Message[]
+//   decision                         String?
+//   business_id                      Int?
+//   event                            String?
+//   previous_quality_score           String?
+//   new_quality_score                String?
+//   message_template_id              Int?
+//   message_template_name            String?
+//   message_template_language        MessageTemplateLanguage?
+//   reason                           String?
+//   display_phone_number             String?
+//   requested_verified_name          String?
+//   rejection_reason                 String?
+//   previous_category                String?
+//   new_category                     String?
+//   statuses                         Status[]
+//   entity_type                      String?
+//   entity_id                        Int?
+//   alert_severity                   String?
+//   alert_status                     String?
+//   alert_type                       String?
+//   alert_description                String?
+//   phone_number                     String?
+//   campaign_id                      Int?
+//   campaign_name                    String?
+//   old_status                       String?
+//   new_status                       String?
+//   paused_reasons                   String[]
+//   complete_reason                  String?
+//   current_limit                    String?
+//   max_daily_conversation_per_phone Int?
+//   max_phone_numbers_per_business   Int?
+//   requester                        String?
+//   Change                           Change[]
+// }
 
-model Metadata {
-  id                   BigInt @id @unique @db.BigInt
-  display_phone_number String @db.VarChar(255)
-  phone_number_id      String @db.VarChar(255)
-  value                Value  @relation(fields: [valueId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "4")
-  valueId              BigInt
-}
+// model Contact {
+//   id        Int     @id @default(autoincrement())
+//   profile   Profile @relation(fields: [profileId], references: [id])
+//   wa_id     String
+//   Value     Value   @relation(fields: [], references: [])
+//   profileId Int
+// }
 
-model Contacts {
-  id      BigInt    @id @unique @db.BigInt
-  wa_id   String    @db.VarChar(255)
-  value   Value     @relation(fields: [valueId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "5")
-  valueId BigInt
-  profile Profile[]
-}
+// model Profile {
+//   id      Int       @id @default(autoincrement())
+//   name    String
+//   Contact Contact[]
+// }
 
-model Profile {
-  id         BigInt   @id @unique @db.BigInt
-  name       String   @db.VarChar(255)
-  contacts   Contacts @relation(fields: [contactsId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "6")
-  contactsId BigInt
-}
+// model Message {
+//   context     Context?     @relation(fields: [], references: [])
+//   from        String
+//   id          String
+//   timestamp   String
+//   type        String
+//   interactive Interactive? @relation(fields: [], references: [])
+//   image       Image?       @relation(fields: [imageId], references: [id])
+//   text        Text?        @relation(fields: [], references: [])
+//   audio       Audio?       @relation(fields: [audioId], references: [id])
+//   Value       Value        @relation(fields: [], references: [])
+//   imageId     String?
+//   audioId     String?
+// }
 
-model Status {
-  id      BigInt  @id @unique @db.BigInt
-  Value   Value?  @relation(fields: [valueId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "7")
-  valueId BigInt?
+// model Image {
+//   mime_type String
+//   sha256    String
+//   id        String    @id
+//   Message   Message[]
+// }
 
-  Conversation Conversation[]
-  pricing      Pricing[]
-}
+// model Audio {
+//   mime_type String
+//   sha256    String
+//   id        String    @id
+//   voice     Boolean?
+//   Message   Message[]
+// }
 
-model Conversation {
-  id       BigInt   @id @unique @db.BigInt
-  Status   Status?  @relation(fields: [statusId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "8")
-  statusId BigInt?  @db.BigInt
-  origin   Origin[]
-}
+// model Context {
+//   from    String
+//   id      String
+//   Message Message[]
+// }
 
-model Origin {
-  id             BigInt        @id @unique @db.BigInt
-  type           String
-  Conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "9")
-  conversationId BigInt?       @db.BigInt
-}
+// model Interactive {
+//   type        String
+//   list_reply  ListReply @relation(fields: [listReplyId], references: [id])
+//   Message     Message[]
+//   listReplyId String
+// }
 
-model Pricing {
-  id            BigInt  @id @unique @db.BigInt
-  billable      Boolean
-  pricing_model String
-  category      String
+// model ListReply {
+//   id          String        @id
+//   title       String
+//   description String
+//   Interactive Interactive[]
+// }
 
-  Status   Status? @relation(fields: [statusId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "10")
-  statusId BigInt? @db.BigInt
-}
+// model Text {
+//   body    String
+//   Message Message[]
+// }
 
-model Messages {
-  id        BigInt   @id @unique @db.BigInt
-  from      String   @db.VarChar(255)
-  timestamp DateTime @db.Timestamp()
-  type      String   @db.VarChar(255)
-  value     Value    @relation(fields: [valueId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "11")
-  valueId   BigInt
-  text      Text[]
-}
+// enum MessagingProduct {
+//   Whatsapp
+// }
 
-model Text {
-  id         BigInt   @id @unique @db.BigInt
-  body       String   @db.Text
-  messages   Messages @relation(fields: [messagesId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "12")
-  messagesId BigInt
-}
+// enum MessageTemplateLanguage {
+//   EnUS
+//   PtBR
+// }
+
+// model Metadata {
+//   display_phone_number String
+//   phone_number_id      String
+//   Value                Value[]
+// }
+
+// model Status {
+//   id             String        @id
+//   status         String
+//   timestamp      String
+//   recipient_id   String
+//   conversation   Conversation? @relation(fields: [conversationId], references: [id])
+//   pricing        Pricing?      @relation(fields: [], references: [])
+//   Value          Value         @relation(fields: [], references: [])
+//   conversationId String?
+// }
+
+// model Conversation {
+//   id                   String   @id
+//   origin               Origin   @relation(fields: [], references: [])
+//   expiration_timestamp String?
+//   Status               Status[]
+// }
+
+// model Origin {
+//   type         String
+//   Conversation Conversation[]
+// }
+
+// model Pricing {
+//   billable      Boolean
+//   pricing_model String
+//   category      String
+//   Status        Status[]
+// }
+// // 

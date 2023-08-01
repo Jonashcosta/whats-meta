@@ -3,9 +3,9 @@
  * whois -h whois.radb.net — '-i origin AS32934' | grep ^route | awk '{print $2}' | sort
  */
 import { Request, Response, Router } from 'express';
-import { WebhookNotification } from './types';
+import { MessageTypes, WebhookNotification } from './types';
 import db from '../../../db/conection';
-import { Webhook } from '@prisma/client';
+import { Webhook, Entry } from '@prisma/client';
 const webhook = Router();
 const prisma = db();
 webhook.get('/', (req: Request, res: Response) => {
@@ -45,38 +45,58 @@ webhook.post('/', async (req: Request, res: Response) => {
   const body: WebhookNotification = await req.body;
 
   //  console.log(Object.getOwnPropertyNames(body.entry[0]) + '\n');
-  if (body.entry[0]) {
-    if (body.entry[0].changes) {
-      if (body.entry[0].changes[0].field)
-        if (body.entry[0].changes[0].field === 'messages') {
-          // message process
-          console.log(body);
-          const { entry, object } = body;
-          const { changes, id, time } = entry[0];
-          const { field, value } = changes[0];
-          const {
-            metadata,
-            messages,
-            messaging_product,
-            alert_type,
-            business_id,
-            statuses,
-            campaign_name,
-            complete_reason,
-            contacts,
-            current_limit,
-            decision,
-          } = value;
-          prisma.webhook.create().then((res) => console.log(res));
-        } else {
-          console.log('Error ', 'WebhookNotification::entry::changes::field');
-        }
-    } else {
-      console.log('Error ', 'WebhookNotification::entry::changes');
-    }
+
+  // message process
+  if (body.entry) {
+    body.entry.map((entry) => {
+      if (entry.changes) {
+        entry.changes.map((changes) => {
+          switch (changes.field) {
+            case 'messages':
+              if (changes.value.messages && changes.field === 'messages') {
+                changes.value.messages.map((valueMessages) => {
+                  if (valueMessages.type === 'text') {
+                    if (valueMessages.text) {
+                      console.log(valueMessages.from);
+                      console.log('timestamp ', valueMessages.timestamp);
+                      console.log('body \n', valueMessages.text.body);
+                    }
+                  }
+                });
+              } else {
+                console.log(
+                  'Error ',
+                  'WebhookNotification::entry::changes::field::messages'
+                );
+                console.log(changes);
+              }
+              break;
+            case 'message_template_status_update':
+              if (
+                changes.value.messages &&
+                changes.field === 'message_template_status_update'
+              ) {
+              } else {
+                console.log(
+                  'Error ',
+                  'WebhookNotification::entry::changes::field::message_template_status_update'
+                );
+                console.log(changes.field);
+              }
+              break;
+
+            default:
+              break;
+          }
+        });
+      } else {
+        console.log('Error ', 'WebhookNotification::entry::changes');
+      }
+    });
   } else {
     console.log('Error ', 'WebhookNotification::entry');
   }
+
   if (body.entry[0].changes[0].field === 'message_template_status_update') {
     console.log(
       'message_template_status_update',
