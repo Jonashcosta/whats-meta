@@ -2,19 +2,19 @@
  * endereco ip dos servidores
  * whois -h whois.radb.net — '-i origin AS32934' | grep ^route | awk '{print $2}' | sort
  */
-import { Request, Response, Router } from 'express';
-import { MessageTypes, WebhookNotification } from './types';
-import db from '../../../db/conection';
-import { Webhook, Entry } from '@prisma/client';
+import { Request, Response, Router } from "express";
+import { MessageTypes, WebhookNotification } from "./types";
+import db from "../../../db/conection";
+import { Webhook, Entry } from "@prisma/client";
 const webhook = Router();
 const prisma = db();
-webhook.get('/', (req: Request, res: Response) => {
-  const mode = req.query['hub.mode'];
-  const verify_token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
+webhook.get("/", (req: Request, res: Response) => {
+  const mode = req.query["hub.mode"];
+  const verify_token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
 
   const token = process.env.VERIFY_TOKEN;
-  if (mode == 'subscribe' && verify_token == token) {
+  if (mode == "subscribe" && verify_token == token) {
     res.send(challenge);
   } else {
     res.sendStatus(400);
@@ -41,7 +41,7 @@ webhook.get('/', (req: Request, res: Response) => {
  * template_category_update
  */
 
-webhook.post('/', async (req: Request, res: Response) => {
+webhook.post("/", async (req: Request, res: Response) => {
   const body: WebhookNotification = await req.body;
 
   //  console.log(Object.getOwnPropertyNames(body.entry[0]) + '\n');
@@ -49,37 +49,42 @@ webhook.post('/', async (req: Request, res: Response) => {
   // message process
   if (body.entry) {
     body.entry.map((entry) => {
+      // entry
       if (entry.changes) {
+        // changes
         entry.changes.map((changes) => {
-          switch (changes.field) {
-            case 'messages':
-              if (changes.value.messages && changes.field === 'messages') {
+          switch (
+            changes.field // field types
+          ) {
+            case "messages":
+              // messages
+              if (changes.value.messages && changes.field === "messages") {
                 changes.value.messages.map((valueMessages) => {
-                  if (valueMessages.type === 'text') {
+                  if (valueMessages.type === "text") {
                     if (valueMessages.text) {
                       console.log(valueMessages.from);
-                      console.log('timestamp ', valueMessages.timestamp);
-                      console.log('body \n', valueMessages.text.body);
+                      console.log("timestamp ", valueMessages.timestamp);
+                      console.log("body \n", valueMessages.text.body);
                     }
                   }
                 });
               } else {
                 console.log(
-                  'Error ',
-                  'WebhookNotification::entry::changes::field::messages'
+                  "Error ",
+                  "WebhookNotification::entry::changes::field::messages"
                 );
                 console.log(changes);
               }
               break;
-            case 'message_template_status_update':
+            case "message_template_status_update":
               if (
                 changes.value.messages &&
-                changes.field === 'message_template_status_update'
+                changes.field === "message_template_status_update"
               ) {
               } else {
                 console.log(
-                  'Error ',
-                  'WebhookNotification::entry::changes::field::message_template_status_update'
+                  "Error ",
+                  "WebhookNotification::entry::changes::field::message_template_status_update"
                 );
                 console.log(changes.field);
               }
@@ -90,17 +95,17 @@ webhook.post('/', async (req: Request, res: Response) => {
           }
         });
       } else {
-        console.log('Error ', 'WebhookNotification::entry::changes');
+        console.log("Error ", "WebhookNotification::entry::changes");
       }
     });
   } else {
-    console.log('Error ', 'WebhookNotification::entry');
+    console.log("Error ", "WebhookNotification::entry");
   }
 
-  if (body.entry[0].changes[0].field === 'message_template_status_update') {
+  if (body.entry[0].changes[0].field === "message_template_status_update") {
     console.log(
-      'message_template_status_update',
-      '***************************'
+      "message_template_status_update",
+      "***************************"
     );
   }
 });
